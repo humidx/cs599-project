@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>旅行规划 Agent</title>
+  <style>
+    :root{font-family:Inter,"PingFang SC",sans-serif;color:#18332c;background:#eef5ef}*{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top left,#d6eee1,transparent 38%),#f4f2e9}
+    main{max-width:980px;margin:auto;padding:36px 18px}header{margin-bottom:20px}h1{font-size:clamp(28px,5vw,48px);margin:0}header p{color:#597068}
+    #chat{height:65vh;overflow:auto;background:#fffaf0cc;border:1px solid #d6ddd5;border-radius:22px;padding:22px;box-shadow:0 16px 45px #204b3a18}
+    .msg{max-width:85%;padding:13px 16px;margin:10px 0;border-radius:16px;line-height:1.65;white-space:pre-wrap}.agent{background:#e0ede5}.user{background:#1f5b48;color:white;margin-left:auto}.generating{color:#597068}.generating::after{content:'…';display:inline-block;width:1.2em;overflow:hidden;vertical-align:bottom;animation:dots 1.2s steps(4,end) infinite}@keyframes dots{0%{width:0}100%{width:1.2em}}
+    form{display:flex;gap:10px;margin-top:14px}textarea{flex:1;resize:none;border:1px solid #bdc9c2;border-radius:14px;padding:14px;font:inherit}button{border:0;border-radius:14px;padding:0 24px;background:#d66b3c;color:white;font-weight:700;cursor:pointer}button:disabled{opacity:.55}
+    small{display:block;color:#657a72;margin:10px 4px}@media(max-width:600px){main{padding:20px 10px}.msg{max-width:95%}button{padding:0 15px}}
+  </style>
+</head>
+<body><main><header><h1>把旅行变成一条顺路的线</h1><p>告诉我目的地、天数、人数、预算和偏好，我会先补齐约束，再生成每日行程。</p></header>
+  <section id="chat"><div class="msg agent">你好。可以这样描述：我和朋友两人去杭州玩 3 天，总预算 5000 元，喜欢自然和人文。</div></section>
+  <form id="form"><textarea id="input" rows="2" placeholder="输入旅行要求…" required></textarea><button id="send">发送</button></form>
+  <small>实时信息来自公开服务，票价与营业状态请在出发前通过官方渠道复核。</small></main>
+<script>
+let sessionId=localStorage.getItem('travel-session');const chat=document.querySelector('#chat'),form=document.querySelector('#form'),input=document.querySelector('#input'),send=document.querySelector('#send');
+function add(text,role){const div=document.createElement('div');div.className='msg '+role;div.textContent=text;chat.appendChild(div);chat.scrollTop=chat.scrollHeight;return div}
+form.addEventListener('submit',async e=>{e.preventDefault();const message=input.value.trim();if(!message)return;add(message,'user');input.value='';send.disabled=true;const pending=add('正在生成中','agent generating');try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,session_id:sessionId})});if(!res.ok)throw Error('请求失败');const data=await res.json();sessionId=data.session_id;localStorage.setItem('travel-session',sessionId);pending.className='msg agent';pending.textContent=data.reply}catch(err){pending.className='msg agent';pending.textContent='服务暂时不可用，请稍后重试。'}finally{send.disabled=false;input.focus();chat.scrollTop=chat.scrollHeight}});
+</script></body></html>
